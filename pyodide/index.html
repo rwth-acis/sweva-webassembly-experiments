@@ -1,0 +1,73 @@
+<!-- 
+https://pyodide.org/en/stable/usage/quickstart.html
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pyodide</title>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script>
+<script>
+  setupEnvironment();
+
+  async function setupEnvironment() {
+    let pyodide = await loadPyodide({ indexURL : "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/" });
+
+    fetch('python_source/module_int.py')
+          .then(response => response.text())
+          .then((data) => {
+            document.getElementById("code").value = data;
+            document.getElementById("btn").onclick = function(){
+              console.log(pyodide.runPython(document.getElementById("code").value));
+            };
+
+            console.log("Starting tests:");
+
+            //main tests
+            test(pyodide);
+        });
+  }
+
+  const NUM_TEST_COMPILE = 10;
+  const NUM_TEST_RUN = 100;
+  async function test(pyodide) {
+    let pythonFiles = ["module_int", "module_string", "module_string_arr"];
+    let args = [10, "Teststring123", ["s1", "s2", "s3", "s4"]];
+
+    for(file in pythonFiles) {
+      let fileName = pythonFiles[file];
+      let arg = args[file];
+
+      let sourcecode = await (await fetch("python_source/"+fileName+".py")).text();
+    
+      console.log("--------------------------\nTesting "+fileName);
+      console.log("No compilation step, because pyodide is a python interpreter implemented using WebAssembly!");
+
+      start = performance.now();
+      let [result, runTimes] = await new Promise((resolve) => {runInOrder(pyodide, sourcecode, [], 0, resolve)});
+      //console.log("Result: "+result);
+      console.log("Execution times in ms: " + runTimes);
+      console.log("Average time to run: " + ((performance.now()-start)/NUM_TEST_RUN) + "ms");
+    }
+  }
+
+
+  function runInOrder(pyodide, sourcecode, times, num, resolve) {
+    let start = performance.now();
+    let result = pyodide.runPython(sourcecode);
+    let duration = (performance.now() - start);
+    times.push(duration);
+    if(++num == NUM_TEST_RUN)
+      resolve([result, times]);
+    else
+      runInOrder(pyodide, sourcecode, times, num, resolve);
+  }
+
+</script>
+<p>See the browser console!</p>
+<textarea id="code" height="30" style="width: 600px; height: 200px;"></textarea><br>
+<button id="btn">Compile & Run</button>
+</body>
+</html>

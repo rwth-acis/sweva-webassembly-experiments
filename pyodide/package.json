@@ -1,0 +1,15 @@
+{
+  "name": "assemblyscript_with_as-bind",
+  "version": "1.0.0",
+  "description": "Test data transfer using as-bind",
+  "main": "index.html",
+  "dependencies": {
+    "requirejs": "^2.3.6"
+  },
+  "scripts": {
+    "start": "npx serve -l 5001"
+  },
+  "repository": "https://github.com/rwth-acis/sweva-webassembly-experiments",
+  "author": "",
+  "license": ""
+}

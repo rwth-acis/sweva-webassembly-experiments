@@ -1,0 +1,145 @@
+<!-- 
+using https://github.com/AssemblyScript/examples/tree/main/sdk 
+using https://github.com/torch2424/as-bind 
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AssemblyScript with as-bind</title>
+</head>
+<body>
+  <script src="/node_modules/requirejs/require.js"></script>
+<script>
+  require([ "/node_modules/assemblyscript/dist/sdk.js", "/node_modules/as-bind/dist/as-bind.iife.js" ], ({ asc, assemblyscript }) => {
+    
+    define("visitor-as/as", [], assemblyscript);
+
+    require(["/node_modules/as-bind/dist/transform.amd.js"], asbind => {
+     
+      asc.ready.then(() => {
+        fetch('typescript_source/module_int.ts')
+          .then(response => response.text())
+          .then((data) => {
+            document.getElementById("code").value = data;
+            document.getElementById("btn").onclick = function(){
+              compile(asc, asbind, document.getElementById("code").value).then((code) => {
+                compile(asc, asbind, code).then((binary) => {
+                  runWasm(binary, 10).then((result) => {
+                    console.log(result);
+                  });
+                });
+              });
+            };
+
+            //main tests
+            test(asc, asbind);
+        });
+      });
+    });
+  });
+
+  const NUM_TEST_COMPILE = 10;
+  const NUM_TEST_RUN = 100;
+  async function test(asc, asbind) {
+    let typescriptfiles = ["module_int", "module_string", "module_string_arr"];
+    let args = [10, "Teststring123", ["s1", "s2", "s3", "s4"]];
+
+    for(file in typescriptfiles) {
+      let fileName = typescriptfiles[file];
+      let arg = args[file];
+
+      let sourcecode = await (await fetch("typescript_source/"+fileName+".ts")).text();
+    
+      console.log("--------------------------\nTesting "+fileName);
+      console.log("Compiling "+NUM_TEST_COMPILE+"x:");
+      
+      let start = performance.now();
+      let [binary, compileTimes] = await new Promise((resolve) => {compileInOrder(asc, asbind, sourcecode, [], 0, resolve)});
+      console.log("Binary size: "+binary.length+" Bytes");
+      console.log("Compilation times in ms: " + compileTimes);
+      console.log("Average time to compile: " + ((performance.now()-start)/NUM_TEST_COMPILE) + "ms");
+      
+      start = performance.now();
+      let [result, runTimes] = await new Promise((resolve) => {runInOrder(binary, arg, [], 0, resolve)});
+      console.log("Result: "+result);
+      console.log("Execution times in ms: " + runTimes);
+      console.log("Average time to run: " + ((performance.now()-start)/NUM_TEST_RUN) + "ms");
+    }
+  }
+
+  function compileInOrder(asc, asbind, sourcecode, times, num, resolve) {
+    let start = performance.now();
+    compile(asc, asbind, sourcecode).then((resultingBinary) => {
+      let duration = (performance.now() - start);
+      times.push(duration);
+
+      if(++num == NUM_TEST_COMPILE)
+        resolve([resultingBinary, times]);
+      else
+        compileInOrder(asc, asbind, sourcecode, times, num, resolve);
+    });
+  }
+
+  function runInOrder(binary, arg, times, num, resolve) {
+    let start = performance.now();
+    runWasm(binary, arg).then((result) => {
+      let duration = (performance.now() - start);
+      times.push(duration);
+      if(++num == NUM_TEST_RUN)
+        resolve([result, times]);
+      else
+        runInOrder(binary, arg, times, num, resolve);
+    });
+  }
+
+  function compile(asc, asbind, source) {
+    return new Promise((resolve) => {
+      const stdout = asc.createMemoryStream();
+      const stderr = asc.createMemoryStream();
+      asc.main([
+        "module.ts",
+        "-O3",
+        "--runtime", "stub",
+        "--binaryFile", "module.wasm",
+        "--exportRuntime"
+        //"--textFile", "module.wat",
+        //"--sourceMap"
+      ], {
+        stdout,
+        stderr,
+        transforms: [asbind],
+        readFile(name, baseDir) {
+          return name === "module.ts" ? source : null;
+        },
+        writeFile(name, data, baseDir) {
+          //console.log(`>>> WRITE:${name} >>> ${data.length} Bytes`);
+          if(name === "module.wasm"){
+            resolve(data);
+          }
+            
+        },
+        listFiles(dirname, baseDir) {
+          return [];
+        }
+      }, err => {
+        if (err) {
+          console.log(">>> THROWN >>>");
+          console.log(err);
+          console.log(`>>> STDOUT >>>\n${stdout.toString()}`);
+          console.log(`>>> STDERR >>>\n${stderr.toString()}`);
+        }
+      });
+    });
+  }
+
+  async function runWasm(wasmBinary, arg){
+    const instance = await AsBindIIFE.instantiate(wasmBinary);
+    return instance.exports.test(arg);
+  }
+</script>
+<p>See the browser console!</p>
+<textarea id="code" height="30" style="width: 600px; height: 200px;"></textarea><br>
+<button id="btn">Compile & Run</button>
+</body>
+</html>
