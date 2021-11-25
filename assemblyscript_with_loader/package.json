@@ -4,6 +4,7 @@
   "description": "Test data transfer using as-bind",
   "main": "index.html",
   "dependencies": {
+    "@assemblyscript/loader": "^0.19.17",
     "assemblyscript": "^0.19.12",
     "requirejs": "^2.3.6"
   },
@@ -12,5 +13,5 @@
   },
   "repository": "https://github.com/rwth-acis/sweva-webassembly-experiments",
   "author": "",
-  "license": ""
+  "license": "MIT"
 }

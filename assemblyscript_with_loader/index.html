@@ -5,12 +5,13 @@ using https://github.com/AssemblyScript/examples/tree/main/sdk
 <html>
 <head>
 <meta charset="utf-8">
-<title>AssemblyScript with native runner</title>
+<title>AssemblyScript with Loader</title>
 </head>
 <body>
-  <script src="/node_modules/requirejs/require.js"></script>
+<script src="/node_modules/@assemblyscript/loader/umd/index.js"></script>
+<script src="/node_modules/requirejs/require.js"></script>
 <script>
-  require([ "/node_modules/assemblyscript/dist/sdk.js" ], ({ asc, assemblyscript }) => {
+  require([ "/node_modules/assemblyscript/dist/sdk.js" ], ({ asc }) => {
     asc.ready.then(() => {
       fetch('typescript_source/module_int.ts')
         .then(response => response.text())
@@ -38,7 +39,7 @@ using https://github.com/AssemblyScript/examples/tree/main/sdk
     let typescriptfiles = ["module_int", "module_string", "module_string_arr"];
     let args = [10, "Teststring123", ["s1", "s2", "s3", "s4"]];
 
-    for(file in typescriptfiles) {
+    for(var file in typescriptfiles) {
       let fileName = typescriptfiles[file];
       let arg = args[file];
 
@@ -91,11 +92,13 @@ using https://github.com/AssemblyScript/examples/tree/main/sdk
       const stdout = asc.createMemoryStream();
       const stderr = asc.createMemoryStream();
       asc.main([
-        "module.ts",
-        "-O3",
-        "--runtime", "stub",
-        "--binaryFile", "module.wasm",
-        //"--exportRuntime"
+            "module.ts",
+            "-O3",
+            "--runtime", "stub",
+            "--binaryFile", "module.wasm",
+            "--exportTable",
+            "-d def.ts",
+            "--exportRuntime"
         //"--textFile", "module.wat",
         //"--sourceMap"
       ], {
@@ -105,7 +108,7 @@ using https://github.com/AssemblyScript/examples/tree/main/sdk
           return name === "module.ts" ? source : null;
         },
         writeFile(name, data, baseDir) {
-          //console.log(`>>> WRITE:${name} >>> ${data.length} Bytes`);
+          console.log(`>>> WRITE:${name} >>> ${data.length} Bytes`);
           if(name === "module.wasm"){
             resolve(data);
           }
@@ -126,8 +129,30 @@ using https://github.com/AssemblyScript/examples/tree/main/sdk
   }
 
   async function runWasm(wasmBinary, arg){
-    let wasm = await WebAssembly.instantiate(wasmBinary)
-    return wasm.instance.exports.test(arg);
+    let wasm = await loader.instantiate(wasmBinary);
+
+    //distinct handling of datatypes necessary for loader
+    if(typeof arg === 'number') {
+        return wasm.instance.exports.test(arg);
+    }
+    else if(typeof arg == 'string') {
+        let paramStr = wasm.exports.__newString(arg);
+        let strPtr = wasm.exports.test(paramStr);
+        return wasm.exports.__getString(strPtr);
+    }
+    else if(typeof arg == 'object') {
+        let asArr = [];
+        for(i in arg) {
+            asArr.push(wasm.exports.__newString(arg[i]));
+        }
+        let paramArr = wasm.exports.__newArray(wasm.exports.StringArray_ID, asArr);
+        let arrPtr = wasm.exports.__getArray(wasm.exports.test(paramArr));
+        let resArr = [];
+        for(id in arrPtr) {
+            resArr.push(wasm.exports.__getString(arrPtr[id]));
+        }
+        return resArr;
+    }
   }
 </script>
 <p>See the browser console!</p>

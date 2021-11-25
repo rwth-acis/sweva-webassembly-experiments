@@ -45,7 +45,7 @@ using https://github.com/torch2424/as-bind
     let typescriptfiles = ["module_int", "module_string", "module_string_arr"];
     let args = [10, "Teststring123", ["s1", "s2", "s3", "s4"]];
 
-    for(file in typescriptfiles) {
+    for(var file in typescriptfiles) {
       let fileName = typescriptfiles[file];
       let arg = args[file];
 
@@ -57,6 +57,7 @@ using https://github.com/torch2424/as-bind
       let start = performance.now();
       let [binary, compileTimes] = await new Promise((resolve) => {compileInOrder(asc, asbind, sourcecode, [], 0, resolve)});
       console.log("Binary size: "+binary.length+" Bytes");
+      console.log(binary);
       console.log("Compilation times in ms: " + compileTimes);
       console.log("Average time to compile: " + ((performance.now()-start)/NUM_TEST_COMPILE) + "ms");
       
