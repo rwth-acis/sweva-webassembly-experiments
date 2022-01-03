@@ -1,0 +1,14 @@
+{
+  "name": "js_test",
+  "version": "1.0.0",
+  "main": "index.html",
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "npx serve -l 5000"
+  },
+  "repository": "https://github.com/rwth-acis/sweva-webassembly-experiments",
+  "author": "",
+  "license": "MIT"
+}

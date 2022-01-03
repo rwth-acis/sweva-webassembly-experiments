@@ -1,0 +1,49 @@
+<!-- 
+using https://github.com/AssemblyScript/examples/tree/main/sdk 
+using https://github.com/torch2424/as-bind 
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>JavaScript</title>
+</head>
+<body>
+<script>
+    const NUM_TEST_RUN = 10;
+
+    test();
+
+    async function test() {
+
+      start = performance.now();
+        runTimes = [];
+
+      for(var run = 0; run < NUM_TEST_RUN; run++) {
+        var n = 40;
+        var start_t = performance.now();
+
+        /** Fibonacci */
+        var check = 0;
+        for(var i = 0; i < 10000000; i++) {
+          var a = Math.random(), b = 1
+          for(var step = 0; step < n; step++) {
+            let t = a + b
+            a = b
+            b = t
+          }
+        check += b;
+        }
+
+        console.log(check);
+        runTimes.push(Math.round(performance.now()-start_t));
+      }
+
+      console.log("Execution times in ms: " + runTimes);
+      console.log("Average time to run: " + Math.round(((performance.now()-start)/NUM_TEST_RUN)) + "ms");
+  }
+
+</script>
+<p>See the browser console!</p>
+</body>
+</html>

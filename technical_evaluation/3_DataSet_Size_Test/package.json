@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "start": "npx serve -l 5000"
+  },
+  "dependencies": {
+    "requirejs": "^2.3.6",
+    "sweva-core": "git+https://github.com/rwth-acis/sweva-core.git#sweva-webassembly"
+  }
+}
